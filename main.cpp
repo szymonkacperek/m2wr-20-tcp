@@ -71,7 +71,7 @@ int main(){
         cerr<<"Problem with client connecting";
         return -4;
     }
-    fcntl(clientSocket, F_SETFL, O_NONBLOCK);
+    /* fcntl(clientSocket, F_SETFL, O_NONBLOCK); */
 
     /* Close the listening socket */
     close(listening); 
@@ -89,34 +89,43 @@ int main(){
 
     /* Create robot model, store state into variables */
     RobotModel robot_model_1(10.0, 10.0, 3.1416/3.0);
-    double x, y, theta;
+    double x, y, theta, v, w;
     TPacket r_packet;
 
-
-   while(1){
-         /* Wait for the message and store into 'TPacket' structure */
+    /* Infinite loop */
+    while(1){
+         /* Wait for the message and store into TPacket struct */
         int bytes_received = recv(clientSocket, &r_packet, 4096, 0);
-        /* if (bytes_received == -1){ */
-        /*     cerr << "Connection issue" << endl; */
-        /*     return -4; */
-        /* } */
+        if (bytes_received == -1){
+            cerr << "Connection issue" << endl;
+            return -4;
+        }
 
+        /* Stopping the robot */
         if (bytes_received == 0){
-            cout << "Client disconnected" << endl;
+            cout << "[WARN] Client disconnected. Stopping the robot..." << endl;
+            while(r_packet.AppData.velocity.v >= 0){
+                r_packet.AppData.velocity.v -= 0.1;
+                r_packet.AppData.velocity.w -= 0.1;
+                robot_model_1.Update(r_packet.AppData.velocity.v, r_packet.AppData.velocity.w);
+                robot_model_1.GetState(&x, &y, &theta, &v, &w);
+                cout << "out[x, y, theta, v, w] = [" << x << ", " \
+                    << y << ", " << theta <<  ", " << v << ", " << w << "]" << endl;
+                if(r_packet.AppData.velocity.v < 0.2){
+                    r_packet.AppData.velocity.v = 0;
+                }
+                usleep(1000000);
+            }
+            
             return -5;
         }
        
         /* Update robot state and display incoming [v, w] values */
         usleep(1000000);
         robot_model_1.Update(r_packet.AppData.velocity.v, r_packet.AppData.velocity.w);
-        robot_model_1.GetState(&x, &y, &theta);
-        cout << "in[v, w] = [" <<\
-            r_packet.AppData.velocity.v << ", " <<\
-            r_packet.AppData.velocity.w  <<\
-            "] \t out[x, y, theta] = [" << x << ", " << y << ", " << theta << "]" << endl;
-        /* cout << "bytes received 2: " << bytes_received << endl; */
-        /* bytes_received = -1; */
-
+        robot_model_1.GetState(&x, &y, &theta, &v, &w);
+        cout << "out[x, y, theta, v, w] = [" << x << ", " << \
+            y << ", " << theta <<  ", " << v << ", " << w << "]" << endl;
     }
 
     /* Close the socket */
@@ -126,6 +135,7 @@ int main(){
 }
 
 
+/* Split the values into bytes */
 
         /* cout << "Received: " << string(buf, 0, bytes_received) << endl; */
         /* for (int i=0; i<24; i++){ */

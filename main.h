@@ -2,6 +2,7 @@
 #define MAIN_H
 
 #include <math.h>
+#include <ncurses.h>
 
 typedef struct{
     double v;
@@ -30,15 +31,19 @@ class RobotModel{
             theta_ += dt_*omega;
         }
 
-        void GetState(double *p_x, double *p_y, double *p_theta){
+        void GetState(double *p_x, double *p_y, double *p_theta, double *p_v, double *p_w){
             *p_x = x_;
             *p_y = y_;
             *p_theta = theta_;
+            *p_v = y_/(sin(theta_));
+            *p_w = theta_;
         }
 
     private:
         double x_, y_, theta_;
         double dt_ = 0.02;
 };
+
+
 
 #endif
