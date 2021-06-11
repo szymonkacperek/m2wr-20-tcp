@@ -16,7 +16,6 @@ typedef struct{
         AppDataVelocities velocity;
         unsigned char cTab[64];
     }AppData;
-    /* AppData data; */
 }TPacket;
 
 class RobotModel{
@@ -31,19 +30,17 @@ class RobotModel{
             theta_ += dt_*omega;
         }
 
-        void GetState(double *p_x, double *p_y, double *p_theta, double *p_v, double *p_w){
+        void GetState(double *p_x, double *p_y, double *p_theta){
             *p_x = x_;
             *p_y = y_;
             *p_theta = theta_;
-            *p_v = y_/(sin(theta_));
-            *p_w = theta_;
+            /* *p_v = y_/(sin(theta_)); */
+            /* *p_w = theta_; */
         }
 
     private:
         double x_, y_, theta_;
         double dt_ = 0.02;
 };
-
-
 
 #endif
