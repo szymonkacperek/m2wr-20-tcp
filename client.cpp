@@ -7,22 +7,26 @@
 #include <string.h>
 #include <string>
 #include "main.h"
+#include <ncurses.h>
+#include <curses.h>
 
 using namespace std;
 
-void BitsetDouble(double c){
-    /* std::cout<< (int)c <<std::endl; */
-    std::bitset<64> x(c);
-    std::cout<< x << \
-        "\n string: "<< x.to_string() << \
-        "\n ulong: "<< x.to_ulong() << \
-        "\n converted: " << stod(x.to_string()) << \
-        std::endl;
-}
+/* void BitsetDouble(double c){ */
+/*     /1* std::cout<< (int)c <<std::endl; *1/ */
+/*     std::bitset<64> x(c); */
+/*     std::cout<< x << \ */
+/*         "\n string: "<< x.to_string() << \ */
+/*         "\n ulong: "<< x.to_ulong() << \ */
+/*         "\n converted: " << stod(x.to_string()) << \ */
+/*         std::endl; */
+/* } */
 
 
 int main(){
-    /* Create a socket */
+    initscr();
+    echo();
+    keypad(stdscr, true);
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == -1){
         return 1;
@@ -42,45 +46,72 @@ int main(){
         return 1;
     }
 
-    /* While loop */
-    string velocity;
-    string angular_acc;
-    char buf[4096];
+    /* Variables */
+    TPacket packet;
+    char char_vel[20] = "0.0";
+    char char_ang[20] = "0.0";
+    int ch;
 
+    /* Configuring GUI and staring infinite loop, navigating the menu with @ch */
+    printw("[INFO] Initialising screen.\n");
+    timeout(-1);
+    noecho();
     while(1){
-        /* Enter values */
-        cout << "Input velocities:\n[v]> ";
-        getline(cin, velocity);
-        cout << "[omega]> ";
-        getline(cin, angular_acc);
-           
-        /* Create a packet */   
-        TPacket packet;
-        packet.i_ver = 9;
-        packet.i_content_id = 17;
-        packet.AppData.velocity.v = std::stod(velocity);
-        packet.AppData.velocity.w = std::stod(angular_acc);
-        cout << "Size of 'packet' created: " << sizeof(packet) <<"B"<<endl;
-        /* std::cout << "Velocity sent: " << packet.AppData.velocity.v << std::endl; */
-        /* std::cout << "Velocity bin: "; */
-        /* BitsetDouble(packet.AppData.velocity.v); */
+        printw("[INFO] Entering the main menu...\n");
+        printw("[INFO] Press: \t 'i' to input values, \n \
+                'q' to quit, \n \
+                'l' to send in loop, \n \
+                's' to show current [v, w] values.\n");
+        ch = getch();
+        
+        /* @ch: Exit loop */
+        if (ch == 'q') break;
 
-        /* Send to server */
-        if (send(sock, &packet, sizeof(packet)+1, 0) == -1){
-            cout << "Packet transfer error.";
-            continue;
+        /* @ch: Input values and create a packet */
+        if (ch == 'i'){
+            timeout(-1);
+            printw("[INFO] Input velocities: \n[v]> "); 
+            echo();
+            getstr(char_vel);
+            printw("[w]> ");
+            getstr(char_ang);;
+            noecho();
+               
+            packet.i_ver = 9;
+            packet.i_content_id = 17;
+            packet.AppData.velocity.v = std::stod(char_vel);
+            packet.AppData.velocity.w = std::stod(char_ang);
+            printw("[INFO] Entered velocities: [%f, %f].\n", \
+                    std::stod(char_vel), std::stod(char_ang));
         }
 
-        /* Wait for response */
-        /* memset(buf, 0, 4096); */
-        /* int bytes_received = recv(sock, buf, 4096, 0); */
-
-        /* Display response */
-        /* cout << "SERVER> " << string(buf, bytes_received) << "\r\n"; */
+        /* @ch: Continuous loop */
+        if (ch == 'l'){
+            printw("[INFO] Sending data with frequency 1Hz.\n");
+            while(1){
+                nodelay(stdscr, TRUE);
+                usleep(1000000);
+                if (send(sock, &packet, sizeof(packet)+1, 0) == -1){
+                        printw("[INFO] Packet transfer error. Aborting...\n");
+                        continue;
+                }
+                printw("[INFO] Packet sent. Press 'q' to exit the loop and enter menu.\n");
+                ch = getch();
+                if (ch == 'q') break;
+            }
+        }
+        
+        /* @ch: Show current values */
+        if (ch == 's') printw("[INFO] Current values u[w, v]: [%f, %f]\n", \
+                    std::stod(char_vel), std::stod(char_ang));
+        
     }
 
     /* Close the socket */
+    printw("[INFO] Closing the socket.\n");
+    endwin();
     close(sock);
+    getch();
     
     return 0;
 }

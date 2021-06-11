@@ -2,6 +2,7 @@
 #define MAIN_H
 
 #include <math.h>
+#include <ncurses.h>
 
 typedef struct{
     double v;
@@ -15,7 +16,6 @@ typedef struct{
         AppDataVelocities velocity;
         unsigned char cTab[64];
     }AppData;
-    /* AppData data; */
 }TPacket;
 
 class RobotModel{
@@ -34,6 +34,8 @@ class RobotModel{
             *p_x = x_;
             *p_y = y_;
             *p_theta = theta_;
+            /* *p_v = y_/(sin(theta_)); */
+            /* *p_w = theta_; */
         }
 
     private:
